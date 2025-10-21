@@ -2,6 +2,8 @@
 
 A Figma/FigJam plugin that learns design patterns from examples and applies them to multiple elements at once.
 
+<img width="1280" height="640" alt="Mimic image" src="https://github.com/user-attachments/assets/29f9d44f-1c35-46d8-877d-e4ac35e368e8" />
+
 ## What is Mimic?
 
 Mimic helps you maintain design consistency by learning the transformation between two elements and applying that same pattern to other elements. Instead of manually copying individual properties, Mimic captures the entire transformation and replicates it across your selection.
