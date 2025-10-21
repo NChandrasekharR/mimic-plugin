@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Mimic Pattern Learner</title>
+  <style>
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; margin: 0; padding: 16px; color: #111; }
+    h1 { font-size: 16px; margin: 0 0 12px; }
+    button { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid #ddd; background: #111; color: #fff; cursor: pointer; font-weight: 600; }
+    button.secondary { background: #fff; color: #111; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    .stack { display: grid; gap: 8px; }
+    .panel { border: 1px solid #eee; border-radius: 8px; padding: 12px; background: #fafafa; }
+    .muted { color: #666; font-size: 12px; }
+    .pattern { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; white-space: pre-wrap; }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .color { width: 12px; height: 12px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.1); display: inline-block; vertical-align: middle; margin-right: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Mimic Pattern Learner</h1>
+  <div class="stack">
+    <button id="learn-btn">Learn Pattern (from 2 selected)</button>
+    <div id="details" class="panel muted">No pattern learned yet.</div>
+    <button id="apply-btn" class="secondary">Apply Pattern to Selection</button>
+    <div id="status" class="muted"></div>
+  </div>
+
+  <script>
+    const learnBtn = document.getElementById('learn-btn');
+    const applyBtn = document.getElementById('apply-btn');
+    const details = document.getElementById('details');
+    const status = document.getElementById('status');
+
+    function setLoading(loading, message) {
+      learnBtn.disabled = loading;
+      applyBtn.disabled = loading;
+      status.textContent = message || '';
+    }
+
+    function rgbToHex({ r, g, b }) {
+      const to255 = (v) => Math.round(Math.max(0, Math.min(1, v)) * 255);
+      const hex = (n) => n.toString(16).padStart(2, '0');
+      return `#${hex(to255(r))}${hex(to255(g))}${hex(to255(b))}`.toUpperCase();
+    }
+
+    function renderPattern(p) {
+      if (!p) { details.textContent = 'No pattern learned yet.'; return; }
+      const lines = [];
+      if (typeof p.rotation === 'number') lines.push(`Rotation: ${p.rotation.toFixed(2)}°`);
+      if (typeof p.scaleX === 'number' || typeof p.scaleY === 'number') {
+        lines.push(`Scale: x${(p.scaleX ?? 1).toFixed(2)}, y${(p.scaleY ?? 1).toFixed(2)}`);
+      }
+      if (typeof p.opacity === 'number') lines.push(`Opacity Δ: ${p.opacity.toFixed(2)}`);
+      if (p.fill) lines.push(`Fill: <span class="color" style="background:${rgbToHex(p.fill)}"></span>${rgbToHex(p.fill)}`);
+      if (typeof p.strokeWidth === 'number') lines.push(`Stroke Δ: ${p.strokeWidth.toFixed(2)}px`);
+      if (p.stroke) lines.push(`Stroke Color: <span class="color" style="background:${rgbToHex(p.stroke)}"></span>${rgbToHex(p.stroke)}`);
+      if (typeof p.fontSize === 'number') lines.push(`FontSize Δ: ${p.fontSize.toFixed(2)}px`);
+      details.innerHTML = lines.length ? `<div class="pattern">${lines.join('<br/>')}</div>` : 'No properties changed.';
+    }
+
+    learnBtn.onclick = () => {
+      setLoading(true, 'Learning...');
+      parent.postMessage({ pluginMessage: { type: 'learn-pattern' } }, '*');
+    };
+    applyBtn.onclick = () => {
+      setLoading(true, 'Applying...');
+      parent.postMessage({ pluginMessage: { type: 'apply-pattern' } }, '*');
+    };
+
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+      if (msg.type === 'pattern-learned') {
+        renderPattern(msg.data);
+        setLoading(false, 'Learned pattern');
+      } else if (msg.type === 'applied') {
+        setLoading(false, `Applied to ${msg.count} node(s)`);
+      } else if (msg.type === 'error') {
+        setLoading(false, msg.message);
+        details.textContent = msg.message;
+      }
+    };
+  </script>
+</body>
+</html>
+
+
+
